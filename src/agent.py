@@ -11,7 +11,7 @@ llm_anthropic = ChatAnthropic(
 )
 
 llm_openai = ChatOpenAI(
-    model="gpt-5.2-codex",
+    model="gpt-5.3-codex",
     api_key=OPENAI_API_KEY,
 )
 
