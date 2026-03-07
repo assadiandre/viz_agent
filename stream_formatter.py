@@ -57,7 +57,12 @@ def print_stream(stream, *, header: str = "--- Streaming steps ---"):
     seen_count = 0
 
     for chunk in stream:
-        messages = chunk.get("messages", [])
+        # When subgraphs=True, chunks are (namespace, data) or (namespace, mode, data) tuples
+        if isinstance(chunk, tuple):
+            data = chunk[-1]  # data is always last (2- or 3-tuple)
+        else:
+            data = chunk
+        messages = data.get("messages", [])
         for msg in messages[seen_count:]:
             if isinstance(msg, AIMessage):
                 text = format_ai_content(msg.content)
