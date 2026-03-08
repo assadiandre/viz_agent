@@ -20,7 +20,8 @@ def main():
 
         stream = agent.stream(
             {"messages": [{"role": "user", "content": prompt}]},
-            stream_mode="values",
+            stream_mode="updates",
+            subgraphs=True,
         )
         print_stream(stream)
     finally:

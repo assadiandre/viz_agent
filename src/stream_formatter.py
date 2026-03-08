@@ -52,23 +52,34 @@ def format_tool_result(content: str, max_len: int = 300) -> str:
 
 
 def print_stream(stream, *, header: str = "--- Streaming steps ---"):
-    """Consume an agent stream and print formatted output to stdout."""
-    print(f"{header}\n")
-    seen_count = 0
+    """Consume an agent stream and print formatted output to stdout.
 
-    for chunk in stream:
-        messages = chunk.get("messages", [])
-        for msg in messages[seen_count:]:
-            if isinstance(msg, AIMessage):
-                text = format_ai_content(msg.content)
-                if text:
-                    print(f"🤖 {text}\n")
-                if msg.tool_calls:
-                    for tc in msg.tool_calls:
+    Expects ``stream_mode="updates"`` with ``subgraphs=True``.
+    """
+    print(f"{header}\n")
+
+    for namespace, chunk in stream:
+        if not isinstance(chunk, dict):
+            continue
+
+        scope = " > ".join(str(p) for p in namespace) if namespace else "graph"
+
+        for node_name, node_data in chunk.items():
+            if not isinstance(node_data, dict):
+                continue
+            messages = node_data.get("messages", [])
+            if not messages:
+                continue
+            print(f"[{scope}:{node_name}]")
+            for msg in messages:
+                if isinstance(msg, AIMessage):
+                    text = format_ai_content(msg.content)
+                    if text:
+                        print(f"🤖 {text}\n")
+                    for tc in msg.tool_calls or []:
                         name = tc.get("name", "?")
                         args = tc.get("args", {})
                         print(f"  ⚡ {format_tool_call(name, args)}\n")
-            elif isinstance(msg, ToolMessage):
-                content = format_tool_result(msg.content)
-                print(f"  ✓ [{msg.name}]{content}\n")
-            seen_count += 1
+                elif isinstance(msg, ToolMessage):
+                    content = format_tool_result(msg.content)
+                    print(f"  ✓ [{msg.name}]{content}\n")

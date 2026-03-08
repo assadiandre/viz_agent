@@ -10,8 +10,13 @@ def _workspace_path(path: str) -> str:
 
 
 def create_container():
-    """Spin up a detached Manim container with workspace + output volumes."""
+    """Spin up a detached Manim container with workspace + output volumes.
+    The agent_workspace volume is removed before each run for a fresh workspace."""
     client = docker.from_env()
+    try:
+        client.volumes.get("agent_workspace").remove(force=True)
+    except docker.errors.NotFound:
+        pass  # Volume doesn't exist yet, which is fine
     return client.containers.run(
         DOCKER_IMAGE,
         detach=True,
