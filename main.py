@@ -1,32 +1,30 @@
 import sys
 
 from src.agent import build_agent
-from src.container import create_container
 from src.stream_formatter import print_stream
 from src.tools import init_tools
+from src.workspace import create_workspace
 
 
 def main():
-    container = create_container()
-    try:
-        tools = init_tools(container)
-        agent = build_agent(tools)
+    workspace = create_workspace()
+    print(f"Workspace: {workspace}")
 
-        prompt = (
-            sys.argv[1]
-            if len(sys.argv) > 1 and sys.argv[1]
-            else "Create a video explaining the pythagorean theorem."
-        )
+    tools = init_tools(workspace)
+    agent = build_agent(tools)
 
-        stream = agent.stream(
-            {"messages": [{"role": "user", "content": prompt}]},
-            stream_mode="updates",
-            subgraphs=True,
-        )
-        print_stream(stream)
-    finally:
-        container.stop()
-        container.remove()
+    prompt = (
+        sys.argv[1]
+        if len(sys.argv) > 1 and sys.argv[1]
+        else "Create a video explaining the pythagorean theorem."
+    )
+
+    stream = agent.stream(
+        {"messages": [{"role": "user", "content": prompt}]},
+        stream_mode="updates",
+        subgraphs=True,
+    )
+    print_stream(stream)
 
 
 if __name__ == "__main__":

@@ -1,11 +1,11 @@
 [project]
-name = "viz-agent-docker"
-version = "0.1.0"
-description = "Add your description here"
+name = "viz-agent"
+version = "0.2.0"
+description = "Manim video generation agent"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "docker>=7.1.0",
+    "manim>=0.18.0",
     "python-dotenv>=1.0.0",
     "langchain>=1.2.10",
     "langchain-anthropic>=1.3.3",

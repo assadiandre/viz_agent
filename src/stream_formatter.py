@@ -37,7 +37,7 @@ def format_tool_call(name: str, args: dict) -> str:
     if name == "list_files":
         return f"list_files path={args.get('path', '.')!r}"
     if name == "fetch_video":
-        return f"fetch_video path={args.get('container_path', '?')!r}"
+        return f"fetch_video path={args.get('file_path', '?')!r}"
     return f"{name}({args})"
 
 
