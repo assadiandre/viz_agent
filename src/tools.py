@@ -1,4 +1,4 @@
-import os
+import math
 import shutil
 import subprocess
 from pathlib import Path
@@ -9,12 +9,35 @@ from .config import OUTPUT_DIR
 
 _workspace: Path | None = None
 
+# Safe builtins for calculator: only math and basic ops
+_CALC_SAFE = {
+    "sqrt": math.sqrt,
+    "sin": math.sin,
+    "cos": math.cos,
+    "tan": math.tan,
+    "pi": math.pi,
+    "e": math.e,
+    "tau": math.tau,
+    "abs": abs,
+    "round": round,
+    "min": min,
+    "max": max,
+    "sum": sum,
+}
+
 
 def init_tools(workspace: Path):
     """Bind tools to a workspace directory and return the tool list."""
     global _workspace
     _workspace = workspace
-    return [run_command, write_file, read_file, list_files, fetch_video]
+    return [
+        run_command,
+        write_file,
+        read_file,
+        list_files,
+        fetch_video,
+        calculator,
+    ]
 
 
 @tool
@@ -61,6 +84,18 @@ def list_files(path: str = ".") -> str:
         text=True,
     )
     return result.stdout
+
+
+@tool
+def calculator(expression: str) -> str:
+    """Evaluate a math expression for positioning calculations.
+    Supports: +, -, *, /, **, sqrt, sin, cos, tan, pi, e, tau, abs, round, min, max.
+    Examples: '7/2' -> 3.5, '2*sqrt(2)' -> 2.83, '3*0.5' -> 1.5 for offsets."""
+    try:
+        result = eval(expression, {"__builtins__": {}}, _CALC_SAFE)
+        return str(result)
+    except Exception as e:
+        return f"Error: {e}"
 
 
 @tool

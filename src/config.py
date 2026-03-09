@@ -13,11 +13,30 @@ OUTPUT_DIR = Path("./output").resolve()
 OUTPUT_DIR.mkdir(exist_ok=True)
 
 PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
+NOTES_2D_DIR = Path(__file__).resolve().parent.parent / "notes" / "2d"
 
 _MANIM_GUIDE = ""
 _guide_path = PROMPTS_DIR / "manim-code.md"
 if _guide_path.exists():
     _MANIM_GUIDE = _guide_path.read_text()
+
+HARDCODED_PLAN = ""
+_plan_path = PROMPTS_DIR / "pythagorean-plan.md"
+if _plan_path.exists():
+    HARDCODED_PLAN = _plan_path.read_text()
+
+
+def _load_notes_2d() -> str:
+    """Load Manim Community Edition reference from notes/2d."""
+    parts = []
+    for name in ["constants", "base-types", "scenes", "animations", "mobjects-2d"]:
+        p = NOTES_2D_DIR / f"{name}.md"
+        if p.exists():
+            parts.append(p.read_text())
+    return "\n\n---\n\n".join(parts) if parts else ""
+
+
+_CODING_REFERENCE = _load_notes_2d()
 
 SYSTEM_PROMPT = f"""\
 You are a Manim video generation agent. You create mathematical/explainer videos using the Manim library.
@@ -33,6 +52,31 @@ Manim outputs to media/videos/<filename>/<resolution>/<SceneName>.mp4. Always ca
 --- MANIM CODING REFERENCE ---
 {_MANIM_GUIDE}
 --- END MANIM CODING REFERENCE ---"""
+
+
+CODING_PROMPT = f"""\
+You are a Manim scene coder. You implement individual scenes for a larger multi-scene explainer video.
+
+You are building ONE SCENE at a time — part of a sequence planned by a director. Your scene will be concatenated with others. Keep it focused and self-contained.
+
+Use the Manim Community Edition 
+
+WORKFLOW:
+1. Write a Python file defining a Manim scene (Scene subclass, construct() with self.play())
+2. Render: `manim -qm scene.py SceneName` (-qm = 720p medium quality)
+3. Call fetch_video to copy from media/videos/... to output
+4. Report the final video path
+
+CRITICAL — LAYOUT AND POSITIONING:
+- The screen is roughly x ∈ [-7, 7], y ∈ [-4, 4]. Do NOT let elements overlap.
+- Position deliberately: use ORIGIN, UP, DOWN, LEFT, RIGHT, UL, UR, DL, DR, or explicit offsets like 2*UP + 1.5*LEFT.
+- Use move_to(), next_to(), to_edge(), to_corner(), arrange(), arrange_in_grid() to control layout.
+- Use buff= (SMALL_BUFF, MED_SMALL_BUFF, MED_LARGE_BUFF, LARGE_BUFF) for spacing.
+- For precise placements (centering multiple elements, spacing, avoiding clipping), use the calculator tool to compute coordinates before coding.
+- If elements would go outside the screen bounds, use MovingCameraScene and zoom out (e.g. self.camera.frame.animate.scale(0.7)) so everything fits.
+
+CALCULATOR TOOL:
+Use the calculator tool whenever you need numeric values for positioning — e.g. centering text, spacing elements, computing offsets, converting between frame units. Examples: "7/2" for half-width, "3 * 0.5" for a 1.5-unit offset, "sqrt(2)" for diagonal spacing."""
 
 PLANNER_PROMPT = """\
 You are a Manim scene planner. Given a topic, describe a sequence of scenes for a Manim video.
