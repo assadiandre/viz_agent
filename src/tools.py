@@ -9,20 +9,58 @@ from .config import OUTPUT_DIR
 
 _workspace: Path | None = None
 
-# Safe builtins for calculator: only math and basic ops
 _CALC_SAFE = {
-    "sqrt": math.sqrt,
+    # Trig
     "sin": math.sin,
     "cos": math.cos,
     "tan": math.tan,
-    "pi": math.pi,
-    "e": math.e,
-    "tau": math.tau,
+    "asin": math.asin,
+    "acos": math.acos,
+    "atan": math.atan,
+    "atan2": math.atan2,
+    "sinh": math.sinh,
+    "cosh": math.cosh,
+    "tanh": math.tanh,
+    "asinh": math.asinh,
+    "acosh": math.acosh,
+    "atanh": math.atanh,
+    "degrees": math.degrees,
+    "radians": math.radians,
+    # Powers / roots / logs
+    "sqrt": math.sqrt,
+    "pow": pow,
+    "log": math.log,
+    "log2": math.log2,
+    "log10": math.log10,
+    "exp": math.exp,
+    # Rounding / sign
     "abs": abs,
     "round": round,
+    "ceil": math.ceil,
+    "floor": math.floor,
+    "trunc": math.trunc,
+    "copysign": math.copysign,
+    # Aggregates
     "min": min,
     "max": max,
     "sum": sum,
+    # Combinatorics
+    "factorial": math.factorial,
+    "comb": math.comb,
+    "perm": math.perm,
+    "gcd": math.gcd,
+    "lcm": math.lcm,
+    # Geometry / misc
+    "hypot": math.hypot,
+    "dist": math.dist,
+    "fmod": math.fmod,
+    "remainder": math.remainder,
+    "isclose": math.isclose,
+    # Constants
+    "pi": math.pi,
+    "e": math.e,
+    "tau": math.tau,
+    "inf": math.inf,
 }
 
 
@@ -38,6 +76,21 @@ def init_tools(workspace: Path):
         fetch_video,
         calculator,
     ]
+
+
+def get_coding_tools():
+    """Tools for the coding agent: write, read, list, calculate."""
+    return [write_file, read_file, list_files, calculator]
+
+
+def get_critic_tools():
+    """Tools for the critic agent: read, list, calculate."""
+    return [read_file, list_files, calculator]
+
+
+def get_render_tools():
+    """Tools for the render agent: run commands, read, list, fetch video."""
+    return [run_command, read_file, list_files, fetch_video]
 
 
 @tool
@@ -69,6 +122,8 @@ def read_file(path: str) -> str:
     target = _workspace / path.lstrip("/")
     if not target.exists():
         return f"Error: {path} not found"
+    if target.is_dir():
+        return f"Error: {path} is a directory, not a file. Use list_files to browse directories."
     return target.read_text()
 
 
@@ -89,8 +144,15 @@ def list_files(path: str = ".") -> str:
 @tool
 def calculator(expression: str) -> str:
     """Evaluate a math expression for positioning calculations.
-    Supports: +, -, *, /, **, sqrt, sin, cos, tan, pi, e, tau, abs, round, min, max.
-    Examples: '7/2' -> 3.5, '2*sqrt(2)' -> 2.83, '3*0.5' -> 1.5 for offsets."""
+    Supports: +, -, *, /, **,
+      trig: sin, cos, tan, asin, acos, atan, atan2, sinh, cosh, tanh, asinh, acosh, atanh, degrees, radians,
+      powers/logs: sqrt, pow, log, log2, log10, exp,
+      rounding: abs, round, ceil, floor, trunc,
+      aggregates: min, max, sum,
+      combinatorics: factorial, comb, perm, gcd, lcm,
+      geometry: hypot, dist, fmod, remainder, isclose,
+      constants: pi, e, tau, inf.
+    Examples: 'atan2(3, 4)', 'degrees(pi/6)' -> 30.0, 'hypot(3, 4)' -> 5.0"""
     try:
         result = eval(expression, {"__builtins__": {}}, _CALC_SAFE)
         return str(result)

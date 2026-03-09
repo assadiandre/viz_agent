@@ -10,8 +10,8 @@ def main():
     workspace = create_workspace()
     print(f"Workspace: {workspace}")
 
-    tools = init_tools(workspace)
-    agent = build_agent(tools)
+    init_tools(workspace)
+    agent = build_agent()
 
     prompt = (
         sys.argv[1]

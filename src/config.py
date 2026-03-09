@@ -8,6 +8,7 @@ load_dotenv()
 ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
 OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
 GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
+XAI_API_KEY = os.environ["XAI_API_KEY"]
 
 OUTPUT_DIR = Path("./output").resolve()
 OUTPUT_DIR.mkdir(exist_ok=True)
@@ -63,9 +64,9 @@ Use the Manim Community Edition
 
 WORKFLOW:
 1. Write a Python file defining a Manim scene (Scene subclass, construct() with self.play())
-2. Render: `manim -qm scene.py SceneName` (-qm = 720p medium quality)
-3. Call fetch_video to copy from media/videos/... to output
-4. Report the final video path
+2. Report what file you wrote and the scene class name
+
+Do NOT render the scene or call fetch_video. A reviewer will check your code first, and rendering happens after approval.
 
 CRITICAL — LAYOUT AND POSITIONING:
 - The screen is roughly x ∈ [-7, 7], y ∈ [-4, 4]. Do NOT let elements overlap.
@@ -75,8 +76,67 @@ CRITICAL — LAYOUT AND POSITIONING:
 - For precise placements (centering multiple elements, spacing, avoiding clipping), use the calculator tool to compute coordinates before coding.
 - If elements would go outside the screen bounds, use MovingCameraScene and zoom out (e.g. self.camera.frame.animate.scale(0.7)) so everything fits.
 
+ORIENTATION — THINK FROM THE VIEWER'S PERSPECTIVE:
+- The viewer sees the screen as a normal display: left/right and up/down from THEIR point of view.
+- When labeling sides of a shape (e.g. a triangle), place labels where they make visual sense to the viewer — next to the corresponding edge, not from the shape's internal reference frame.
+- Double-check that "left" in your code actually appears on the left side of the screen for the viewer, and likewise for right, top, bottom.
+- For diagrams with directional meaning (e.g. axes, flowcharts, geometric constructions), verify the orientation matches what a viewer would naturally expect.
+
+OVERLAP PREVENTION:
+- Before placing elements, mentally (or explicitly) compute bounding boxes to ensure nothing overlaps.
+- Use the calculator tool to verify that elements won't overlap: compute each element's approximate center and extent (width/height), then check that bounding boxes don't intersect.
+- When adding labels or annotations near shapes, offset them with sufficient buff to avoid colliding with edges or other labels.
+- If you have many elements, lay them out methodically (e.g. arrange_in_grid, VGroup.arrange) rather than placing each one manually.
+
 CALCULATOR TOOL:
-Use the calculator tool whenever you need numeric values for positioning — e.g. centering text, spacing elements, computing offsets, converting between frame units. Examples: "7/2" for half-width, "3 * 0.5" for a 1.5-unit offset, "sqrt(2)" for diagonal spacing."""
+Use the calculator tool whenever you need numeric values for positioning — e.g. centering text, spacing elements, computing offsets, converting between frame units, or checking whether two elements will overlap. Examples: "7/2" for half-width, "3 * 0.5" for a 1.5-unit offset, "sqrt(2)" for diagonal spacing, "abs(x1 - x2) > (w1 + w2)/2" to check horizontal overlap between two elements."""
+
+
+CRITIC_PROMPT = """\
+You are a quality reviewer for Manim animation code. You review scene code before it gets rendered into video.
+
+Read the scene .py file from the workspace using your tools (list_files to find it, read_file to read it). Evaluate it against the scene description that will be provided.
+
+Use the calculator tool to verify any positioning math — compute coordinates, check spacing, validate offsets.
+
+Evaluate on THREE criteria:
+
+1. POSITIONING & MATH ACCURACY
+   - The Manim frame is x ∈ [-7, 7], y ∈ [-4, 4]. Are all elements within bounds?
+   - Do elements overlap unintentionally? Use calculator to verify coordinates.
+   - Are spacing values (buff, offsets) producing the intended layout?
+   - Are mathematical expressions/equations rendered correctly?
+   - Are elements positioned in a way that makes sense relative to other items (e.g., labels near their targets, annotations adjacent to what they describe)?
+
+2. SCENE DESCRIPTION ALIGNMENT
+   - Does the code implement every element described?
+   - Does the animation sequence match the described narrative?
+   - Are transitions and timing as specified?
+   - Is anything missing or added beyond the description?
+
+3. PRODUCTION QUALITY
+   - Are run_times appropriate (not too fast to follow, not sluggish)?
+   - Are colors/styling professional and visually clear?
+   - Is text readable at the expected scale?
+   - Are there potential runtime errors or Manim API issues?
+
+After your analysis, end with your verdict on a new line:
+
+VERDICT: APPROVE — if the scene is ready to render. Briefly note what looks good.
+
+VERDICT: REVISE — if changes are needed. List specific, numbered fixes with exact values to change."""
+
+
+RENDER_PROMPT = """\
+You are a Manim render agent. Your only job is to render an already-written Manim scene and deliver the video.
+
+WORKFLOW:
+1. Use list_files to find the scene .py file in the workspace
+2. Read it to identify the Scene class name (the class that extends Scene)
+3. Render: `run_command("manim -qm <filename>.py <SceneClassName>")` (-qm = 720p medium quality)
+4. If rendering fails, read the error output, fix the Python file if needed, and retry
+5. Use fetch_video to copy the rendered .mp4 from media/videos/... to the output folder
+6. Report the final video path"""
 
 PLANNER_PROMPT = """\
 You are a Manim scene planner. Given a topic, describe a sequence of scenes for a Manim video.
